@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -70,6 +71,9 @@ var (
 	mouthCascades = [4]string{"lp93", "lp84", "lp82", "lp81"}
 )
 
+//go:embed cascade/facefinder
+var cascadeFile []byte
+
 // faceDetector struct contains Pigo face detector general settings.
 type faceDetector struct {
 	cascadeFile  string
@@ -104,7 +108,6 @@ func main() {
 		// Flags
 		source       = flag.String("in", pipeName, "Source image")
 		destination  = flag.String("out", pipeName, "Destination image")
-		cascadeFile  = flag.String("cf", "", "Cascade binary file")
 		minSize      = flag.Int("min", 20, "Minimum size of face")
 		maxSize      = flag.Int("max", 1000, "Maximum size of face")
 		shiftFactor  = flag.Float64("shift", 0.15, "Shift detection window by percentage")
@@ -125,8 +128,8 @@ func main() {
 	}
 	flag.Parse()
 
-	if len(*source) == 0 || len(*cascadeFile) == 0 {
-		log.Fatal("Usage: pigo -in input.jpg -out out.png -cf cascade/facefinder")
+	if len(*source) == 0 {
+		log.Fatal("Usage: pigo -in input.jpg -out out.png")
 	}
 
 	start := time.Now()
@@ -138,7 +141,6 @@ func main() {
 	det = &faceDetector{
 		angle:        *angle,
 		destination:  *destination,
-		cascadeFile:  *cascadeFile,
 		minSize:      *minSize,
 		maxSize:      *maxSize,
 		shiftFactor:  *shiftFactor,
@@ -164,7 +166,7 @@ func main() {
 				log.Fatalf("Output file type not supported: %v", ext)
 			}
 
-			fn, err := os.OpenFile(det.destination, os.O_CREATE|os.O_WRONLY, 0755)
+			fn, err := os.OpenFile(det.destination, os.O_CREATE|os.O_WRONLY, 0o755)
 			if err != nil {
 				log.Fatalf("Unable to open output file: %v", err)
 			}
@@ -208,7 +210,6 @@ func main() {
 			}
 			out = f
 		}
-
 	}
 	spinner.StopMsg = fmt.Sprintf("Detecting faces... %s✔%s", successColor, defaultColor)
 	spinner.Stop()
@@ -293,18 +294,18 @@ func (fd *faceDetector) detectFaces(source string) ([]pigo.Detection, error) {
 		ImageParams: *imgParams,
 	}
 
-	cascadeFile, err := ioutil.ReadFile(det.cascadeFile)
-	if err != nil {
-		return nil, fmt.Errorf("error reading the facefinder cascade file")
-	}
+	//cascadeFile, err := ioutil.ReadFile(det.cascadeFile)
+	//if err != nil {
+	//	return nil, fmt.Errorf("error reading the facefinder cascade file")
+	//}
 
-	contentType, err := utils.DetectFileContentType(det.cascadeFile)
-	if err != nil {
-		return nil, err
-	}
-	if contentType != "application/octet-stream" {
-		return nil, fmt.Errorf("the provided cascade classifier is not valid")
-	}
+	//contentType, err := utils.DetectFileContentType(det.cascadeFile)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//if contentType != "application/octet-stream" {
+	//	return nil, fmt.Errorf("the provided cascade classifier is not valid")
+	//}
 
 	p := pigo.NewPigo()
 	// Unpack the binary file. This will return the number of cascade trees,
